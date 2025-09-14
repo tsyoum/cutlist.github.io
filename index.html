@@ -1,0 +1,634 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Woodworking Cutlist Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container-card {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        #cutlistCanvas {
+            border: 2px solid #374151;
+            background-color: #e5e7eb;
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-6xl space-y-8">
+        <!-- Title and Description -->
+        <header class="text-center space-y-2">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900">Woodworking Cutlist Generator</h1>
+            <p class="text-gray-600 max-w-xl mx-auto">
+                Generate a visual cutlist for your woodworking projects. Enter your sheet and part dimensions below to get started.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Card -->
+            <div class="container-card">
+                <h2 class="text-2xl font-bold mb-6">Input Details</h2>
+
+                <!-- Saw Kerf Input -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold text-gray-700">Saw Kerf (in)</h3>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <label for="sawKerf" class="block text-sm font-medium text-gray-700">Kerf Width</label>
+                            <input type="number" id="sawKerf" value="0.125" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sheet List -->
+                <div class="space-y-4 mt-8">
+                    <h3 class="text-xl font-semibold text-gray-700">Available Sheets</h3>
+                    <div id="sheetsContainer" class="space-y-4">
+                        <!-- Initial sheet row -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-end sheet-row">
+                            <div class="flex-1">
+                                <label for="sheetLength1" class="block text-sm font-medium text-gray-700">Length</label>
+                                <input type="number" id="sheetLength1" value="96" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex-1">
+                                <label for="sheetWidth1" class="block text-sm font-medium text-gray-700">Width</label>
+                                <input type="number" id="sheetWidth1" value="48" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex-1">
+                                <label for="sheetQuantity1" class="block text-sm font-medium text-gray-700">Quantity</label>
+                                <input type="number" id="sheetQuantity1" value="2" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button onclick="removeSheetRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove sheet">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="addSheetRow()" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 transition-colors duration-200 w-full font-semibold">
+                        Add Another Sheet Type
+                    </button>
+                </div>
+
+                <!-- Part List -->
+                <div class="mt-8 space-y-4">
+                    <h3 class="text-xl font-semibold text-gray-700">Part List</h3>
+                    <div id="partsContainer" class="space-y-4">
+                        <!-- Initial part row -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-end part-row">
+                            <div class="flex-1">
+                                <label for="partLength1" class="block text-sm font-medium text-gray-700">Length</label>
+                                <input type="number" id="partLength1" value="24" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex-1">
+                                <label for="partWidth1" class="block text-sm font-medium text-gray-700">Width</label>
+                                <input type="number" id="partWidth1" value="12" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="flex-1">
+                                <label for="partQuantity1" class="block text-sm font-medium text-gray-700">Quantity</label>
+                                <input type="number" id="partQuantity1" value="8" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button onclick="removePartRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove part">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="addPartRow()" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 transition-colors duration-200 w-full font-semibold">
+                        Add Another Part
+                    </button>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="generateCutlist()" class="mt-8 w-full py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-colors duration-200 font-bold text-lg">
+                    Generate Cutlist
+                </button>
+            </div>
+
+            <!-- Output Card -->
+            <div class="container-card">
+                <h2 class="text-2xl font-bold mb-6">Cutlist Output</h2>
+                <div id="outputContent" class="space-y-6 hidden">
+                    <!-- Cutlist Summary -->
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <p id="summaryText" class="text-gray-700 text-lg font-medium"></p>
+                    </div>
+
+                    <!-- Visual Cutlist -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Visual Cutlist</h3>
+                        <canvas id="cutlistCanvas" class="w-full"></canvas>
+                        <p class="text-sm text-gray-500 mt-2">The diagram shows how the parts are laid out on the sheets. Dimensions are in inches.</p>
+                        <button onclick="openPrintFriendlyWindow()" class="mt-4 w-full py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 transition-colors duration-200 font-semibold">
+                            Print Visual Cutlist
+                        </button>
+                    </div>
+
+                    <!-- Cutlist Table -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Detailed Cutlist</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sheet #</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cutlistTableBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Table rows will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to keep track of row IDs
+        let partRowCount = 1;
+        let sheetRowCount = 1;
+        // Global variable to store the generated cutlist data for printing
+        let globalUsedSheets = [];
+
+        // Function to add a new sheet input row
+        function addSheetRow() {
+            sheetRowCount++;
+            const sheetsContainer = document.getElementById('sheetsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'flex flex-col sm:flex-row gap-4 items-end sheet-row';
+            newRow.innerHTML = `
+                <div class="flex-1">
+                    <label for="sheetLength${sheetRowCount}" class="block text-sm font-medium text-gray-700">Length</label>
+                    <input type="number" id="sheetLength${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="flex-1">
+                    <label for="sheetWidth${sheetRowCount}" class="block text-sm font-medium text-gray-700">Width</label>
+                    <input type="number" id="sheetWidth${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="flex-1">
+                    <label for="sheetQuantity${sheetRowCount}" class="block text-sm font-medium text-gray-700">Quantity</label>
+                    <input type="number" id="sheetQuantity${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <button onclick="removeSheetRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove sheet">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            `;
+            sheetsContainer.appendChild(newRow);
+        }
+
+        // Function to remove a sheet input row
+        function removeSheetRow(button) {
+            const row = button.closest('.sheet-row');
+            if (document.querySelectorAll('.sheet-row').length > 1) {
+                row.remove();
+            } else {
+                const inputs = row.querySelectorAll('input');
+                inputs.forEach(input => input.value = '');
+            }
+        }
+
+        // Function to add a new part input row
+        function addPartRow() {
+            partRowCount++;
+            const partsContainer = document.getElementById('partsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'flex flex-col sm:flex-row gap-4 items-end part-row';
+            newRow.innerHTML = `
+                <div class="flex-1">
+                    <label for="partLength${partRowCount}" class="block text-sm font-medium text-gray-700">Length</label>
+                    <input type="number" id="partLength${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="flex-1">
+                    <label for="partWidth${partRowCount}" class="block text-sm font-medium text-gray-700">Width</label>
+                    <input type="number" id="partWidth${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="flex-1">
+                    <label for="partQuantity${partRowCount}" class="block text-sm font-medium text-gray-700">Quantity</label>
+                    <input type="number" id="partQuantity${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <button onclick="removePartRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove part">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            `;
+            partsContainer.appendChild(newRow);
+        }
+
+        // Function to remove a part input row
+        function removePartRow(button) {
+            const row = button.closest('.part-row');
+            if (document.querySelectorAll('.part-row').length > 1) {
+                row.remove();
+            } else {
+                const inputs = row.querySelectorAll('input');
+                inputs.forEach(input => input.value = '');
+            }
+        }
+
+        // The core logic to generate the cutlist
+        function generateCutlist() {
+            const sheetsData = getSheetsFromInputs();
+            const parts = getPartsFromInputs();
+            const kerf = parseFloat(document.getElementById('sawKerf').value) || 0;
+
+            // Validate inputs
+            if (kerf < 0 || isNaN(kerf)) {
+                 alert('Please enter a valid, non-negative number for saw kerf.');
+                 return;
+            }
+            if (sheetsData.length === 0) {
+                alert('Please add at least one sheet.');
+                return;
+            }
+            if (parts.length === 0) {
+                alert('Please add at least one part.');
+                return;
+            }
+            for (const sheet of sheetsData) {
+                if (isNaN(sheet.length) || isNaN(sheet.width) || isNaN(sheet.quantity) || sheet.length <= 0 || sheet.width <= 0 || sheet.quantity <= 0) {
+                    alert('Please ensure all sheet dimensions and quantities are valid numbers greater than zero.');
+                    return;
+                }
+            }
+            for (const part of parts) {
+                if (isNaN(part.length) || isNaN(part.width) || isNaN(part.quantity) || part.length <= 0 || part.width <= 0 || part.quantity <= 0) {
+                    alert('Please ensure all part dimensions and quantities are valid numbers greater than zero.');
+                    return;
+                }
+            }
+
+            // Create a flat list of all available sheets
+            const availableSheets = [];
+            sheetsData.forEach(sheetType => {
+                for (let i = 0; i < sheetType.quantity; i++) {
+                    availableSheets.push({
+                        length: sheetType.length,
+                        width: sheetType.width,
+                        parts: [],
+                        waste: [{ x: 0, y: 0, w: sheetType.length, h: sheetType.width }]
+                    });
+                }
+            });
+
+            // Sort parts by descending area for a greedy best-fit algorithm
+            parts.sort((a, b) => (b.length * b.width) - (a.length * a.width));
+
+            const usedSheets = [];
+            let totalPartArea = 0;
+            const remainingParts = parts.flatMap(p => Array(p.quantity).fill({ length: p.length, width: p.width }));
+
+            // Place parts on sheets using a best-fit strategy
+            while (remainingParts.length > 0) {
+                let partPlaced = false;
+                const partToPlace = remainingParts[0];
+                
+                let bestFit = {
+                    sheetIndex: -1,
+                    wasteIndex: -1,
+                    rotation: false,
+                    remainingArea: Infinity
+                };
+
+                // Find the best fit for the current part
+                for (let i = 0; i < availableSheets.length; i++) {
+                    const sheet = availableSheets[i];
+                    if (sheet.isFull) continue;
+
+                    for (let j = 0; j < sheet.waste.length; j++) {
+                        const waste = sheet.waste[j];
+                        
+                        // Check fit without rotation
+                        if ((partToPlace.length + kerf) <= waste.w && (partToPlace.width + kerf) <= waste.h) {
+                            const newRemainingArea = (waste.w - (partToPlace.length + kerf)) * waste.h + waste.w * (waste.h - (partToPlace.width + kerf));
+                            if (newRemainingArea < bestFit.remainingArea) {
+                                bestFit = { sheetIndex: i, wasteIndex: j, rotation: false, remainingArea: newRemainingArea };
+                            }
+                        }
+
+                        // Check fit with rotation
+                        if ((partToPlace.width + kerf) <= waste.w && (partToPlace.length + kerf) <= waste.h) {
+                            const newRemainingArea = (waste.w - (partToPlace.width + kerf)) * waste.h + waste.w * (waste.h - (partToPlace.length + kerf));
+                            if (newRemainingArea < bestFit.remainingArea) {
+                                bestFit = { sheetIndex: i, wasteIndex: j, rotation: true, remainingArea: newRemainingArea };
+                            }
+                        }
+                    }
+                }
+
+                if (bestFit.sheetIndex !== -1) {
+                    const sheet = availableSheets[bestFit.sheetIndex];
+                    const waste = sheet.waste[bestFit.wasteIndex];
+
+                    const newPart = {
+                        x: waste.x,
+                        y: waste.y,
+                        w: bestFit.rotation ? partToPlace.width : partToPlace.length,
+                        h: bestFit.rotation ? partToPlace.length : partToPlace.width
+                    };
+                    
+                    sheet.parts.push(newPart);
+                    totalPartArea += newPart.w * newPart.h;
+                    
+                    const kerfW = (bestFit.rotation ? partToPlace.width : partToPlace.length) + kerf;
+                    const kerfH = (bestFit.rotation ? partToPlace.length : partToPlace.width) + kerf;
+
+                    sheet.waste.splice(bestFit.wasteIndex, 1);
+
+                    // Create new waste areas
+                    if (waste.w - kerfW > 0) {
+                        sheet.waste.push({ x: waste.x + kerfW, y: waste.y, w: waste.w - kerfW, h: kerfH });
+                    }
+                    if (waste.h - kerfH > 0) {
+                        sheet.waste.push({ x: waste.x, y: waste.y + kerfH, w: waste.w, h: waste.h - kerfH });
+                    }
+                    
+                    // Add sheet to used list if it's new
+                    if (!usedSheets.includes(sheet)) {
+                        usedSheets.push(sheet);
+                    }
+                    
+                    remainingParts.shift();
+                    partPlaced = true;
+                }
+                
+                if (!partPlaced) {
+                    alert('Not all parts could be placed on the available sheets. Please add more sheets or smaller parts.');
+                    document.getElementById('outputContent').classList.add('hidden');
+                    return;
+                }
+            }
+
+            // Store the used sheets data globally
+            globalUsedSheets = usedSheets;
+
+            // Update the GUI with the results
+            updateOutput(usedSheets, totalPartArea);
+        }
+
+        // Helper function to get sheet data from the form inputs
+        function getSheetsFromInputs() {
+            const sheets = [];
+            document.querySelectorAll('#sheetsContainer .sheet-row').forEach(row => {
+                const length = parseFloat(row.querySelector('input[id^="sheetLength"]').value);
+                const width = parseFloat(row.querySelector('input[id^="sheetWidth"]').value);
+                const quantity = parseInt(row.querySelector('input[id^="sheetQuantity"]').value);
+                if (!isNaN(length) && !isNaN(width) && !isNaN(quantity) && quantity > 0) {
+                    sheets.push({ length, width, quantity });
+                }
+            });
+            return sheets;
+        }
+
+        // Helper function to get part data from the form inputs
+        function getPartsFromInputs() {
+            const parts = [];
+            document.querySelectorAll('#partsContainer .part-row').forEach(row => {
+                const length = parseFloat(row.querySelector('input[id^="partLength"]').value);
+                const width = parseFloat(row.querySelector('input[id^="partWidth"]').value);
+                const quantity = parseInt(row.querySelector('input[id^="partQuantity"]').value);
+                if (!isNaN(length) && !isNaN(width) && !isNaN(quantity) && quantity > 0) {
+                    parts.push({ length, width, quantity });
+                }
+            });
+            return parts;
+        }
+
+        // Function to update the output content
+        function updateOutput(usedSheets, totalPartArea) {
+            document.getElementById('outputContent').classList.remove('hidden');
+            const summaryText = document.getElementById('summaryText');
+            let totalSheetAreaUsed = 0;
+            usedSheets.forEach(sheet => totalSheetAreaUsed += sheet.length * sheet.width);
+
+            const wasteArea = totalSheetAreaUsed - totalPartArea;
+            const wastePercentage = (wasteArea / totalSheetAreaUsed) * 100;
+
+            summaryText.innerHTML = `
+                <p>Number of sheets used: <strong>${usedSheets.length}</strong></p>
+                <p>Total area used: <strong>${totalSheetAreaUsed.toFixed(2)} in²</strong></p>
+                <p>Estimated waste: <strong>${wastePercentage.toFixed(2)}%</strong></p>
+            `;
+
+            drawCutlist(usedSheets);
+            populateTable(usedSheets);
+        }
+
+        // Function to draw the cutlist on the canvas for on-screen display
+        function drawCutlist(usedSheets) {
+            const canvas = document.getElementById('cutlistCanvas');
+            const ctx = canvas.getContext('2d');
+            const padding = 20;
+            const sheetPadding = 10;
+            
+            let totalWidthNeeded = 0;
+            let maxHeight = 0;
+            
+            const widestSheet = usedSheets.reduce((max, sheet) => Math.max(max, sheet.length), 0);
+            const scale = canvas.clientWidth / (widestSheet + sheetPadding) / 1.5;
+
+            usedSheets.forEach((sheet, index) => {
+                const sheetDrawWidth = sheet.length * scale;
+                const sheetDrawHeight = sheet.width * scale;
+                totalWidthNeeded += sheetDrawWidth + sheetPadding;
+                if (sheetDrawHeight > maxHeight) maxHeight = sheetDrawHeight;
+            });
+            
+            canvas.width = totalWidthNeeded + padding;
+            canvas.height = maxHeight + padding;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let currentX = padding / 2;
+            let currentY = padding / 2;
+
+            usedSheets.forEach((sheet, index) => {
+                const sheetDrawWidth = sheet.length * scale;
+                const sheetDrawHeight = sheet.width * scale;
+
+                ctx.strokeStyle = '#374151';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(currentX, currentY, sheetDrawWidth, sheetDrawHeight);
+
+                ctx.fillStyle = '#1f2937';
+                ctx.font = '16px "Inter", sans-serif';
+                ctx.fillText(`Sheet ${index + 1}`, currentX + 5, currentY + 20);
+
+                sheet.parts.forEach((part) => {
+                    const partDrawX = currentX + part.x * scale;
+                    const partDrawY = currentY + part.y * scale;
+                    const partDrawWidth = part.w * scale;
+                    const partDrawHeight = part.h * scale;
+
+                    const color = `hsl(${Math.random() * 360}, 70%, 75%)`;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(partDrawX, partDrawY, partDrawWidth, partDrawHeight);
+                    ctx.strokeStyle = '#1f2937';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(partDrawX, partDrawY, partDrawWidth, partDrawHeight);
+                    
+                    ctx.fillStyle = '#000';
+                    ctx.font = '12px "Inter", sans-serif';
+                    ctx.fillText(`${part.w}" x ${part.h}"`, partDrawX + 5, partDrawY + 15);
+                });
+
+                currentX += sheetDrawWidth + sheetPadding;
+            });
+        }
+
+        // Function to populate the cutlist table for on-screen display
+        function populateTable(usedSheets) {
+            const tableBody = document.getElementById('cutlistTableBody');
+            tableBody.innerHTML = '';
+            
+            usedSheets.forEach((sheet, sheetIndex) => {
+                sheet.parts.forEach((part, partIndex) => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-100 transition-colors duration-200';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Sheet ${sheetIndex + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Part ${partIndex + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${part.w}" x ${part.h}"</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        // ---
+        // Functions for the print-friendly output
+        // ---
+
+        // Function to draw the cutlist on a dedicated canvas for printing (vertical layout)
+        function drawPrintableCutlist(usedSheets, canvasToDrawOn) {
+            const ctx = canvasToDrawOn.getContext('2d');
+            const padding = 50;
+            const sheetPadding = 20;
+
+            const widestSheet = usedSheets.reduce((max, sheet) => Math.max(max, sheet.length), 0);
+            
+            // The scale is determined by the widest sheet fitting within the canvas width
+            const scale = (canvasToDrawOn.width - 2 * padding) / widestSheet;
+            
+            let totalHeightNeeded = 0;
+            usedSheets.forEach(sheet => {
+                totalHeightNeeded += (sheet.width * scale) + sheetPadding;
+            });
+            canvasToDrawOn.height = totalHeightNeeded + padding;
+
+            ctx.clearRect(0, 0, canvasToDrawOn.width, canvasToDrawOn.height);
+            let currentY = padding / 2;
+
+            usedSheets.forEach((sheet, index) => {
+                const sheetDrawWidth = sheet.length * scale;
+                const sheetDrawHeight = sheet.width * scale;
+                const currentX = (canvasToDrawOn.width - sheetDrawWidth) / 2; // Center the sheet
+
+                ctx.strokeStyle = '#374151';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(currentX, currentY, sheetDrawWidth, sheetDrawHeight);
+
+                ctx.fillStyle = '#1f2937';
+                ctx.font = '30px "Inter", sans-serif';
+                ctx.fillText(`Sheet ${index + 1}`, currentX + 10, currentY + 40);
+
+                sheet.parts.forEach((part) => {
+                    const partDrawX = currentX + part.x * scale;
+                    const partDrawY = currentY + part.y * scale;
+                    const partDrawWidth = part.w * scale;
+                    const partDrawHeight = part.h * scale;
+
+                    const color = `hsl(${Math.random() * 360}, 70%, 75%)`;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(partDrawX, partDrawY, partDrawWidth, partDrawHeight);
+                    ctx.strokeStyle = '#1f2937';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(partDrawX, partDrawY, partDrawWidth, partDrawHeight);
+                    
+                    ctx.fillStyle = '#000';
+                    ctx.font = '20px "Inter", sans-serif';
+                    ctx.fillText(`${part.w}" x ${part.h}"`, partDrawX + 10, partDrawY + 30);
+                });
+
+                currentY += sheetDrawHeight + sheetPadding;
+            });
+        }
+
+        // Function to open a new window for printing
+        function openPrintFriendlyWindow() {
+            if (globalUsedSheets.length === 0) {
+                alert('Please generate a cutlist first before trying to print.');
+                return;
+            }
+
+            const printWindow = window.open('', 'Print', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Woodworking Cutlist</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write(`
+                @page { size: letter; margin: 0.5in; }
+                body { font-family: 'Inter', sans-serif; margin: 0.5in; }
+                img { max-width: 100%; height: auto; display: block; margin: 0 auto; border: 1px solid #000; }
+                h1 { text-align: center; margin-bottom: 1rem; }
+                h2 { margin-top: 2rem; }
+                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+            `);
+            printWindow.document.write('</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h1>Woodworking Cutlist</h1>');
+            printWindow.document.write('<h2>Visual Layout</h2>');
+            
+            // Create a temporary canvas for high-resolution printing
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 2550; // Common width for high-quality printing (e.g., 8.5 inches at 300dpi)
+            drawPrintableCutlist(globalUsedSheets, tempCanvas);
+            const dataUrl = tempCanvas.toDataURL('image/png');
+            printWindow.document.write('<img src="' + dataUrl + '">');
+            
+            const tableHtml = document.getElementById('cutlistTableBody').innerHTML;
+            printWindow.document.write('<h2>Detailed Part List</h2>');
+            printWindow.document.write('<table class="min-w-full divide-y divide-gray-200">');
+            printWindow.document.write('<thead class="bg-gray-50"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sheet #</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</th></tr></thead>');
+            printWindow.document.write('<tbody class="bg-white divide-y divide-gray-200">' + tableHtml + '</tbody>');
+            printWindow.document.write('</table>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
+    </script>
+</body>
+</html>
