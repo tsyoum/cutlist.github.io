@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,10 +123,15 @@
                     </button>
                 </div>
 
-                <!-- Action Button -->
-                <button onclick="generateCutlist()" class="mt-8 w-full py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-colors duration-200 font-bold text-lg">
-                    Generate Cutlist
-                </button>
+                <!-- Action Buttons -->
+                <div class="flex space-x-4 mt-8">
+                    <button onclick="generateCutlist()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-colors duration-200 font-bold text-lg">
+                        Generate Cutlist
+                    </button>
+                    <button onclick="copyURLToClipboard()" class="flex-1 py-3 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-colors duration-200 font-bold text-lg">
+                        Copy Shareable URL
+                    </button>
+                </div>
             </div>
 
             <!-- Output Card -->
@@ -179,24 +183,94 @@
         // Global variable to store the generated cutlist data for printing
         let globalUsedSheets = [];
 
+        window.onload = function() {
+            loadInputsFromURL();
+            document.getElementById('sheetsContainer').addEventListener('input', updateURLFromInputs);
+            document.getElementById('partsContainer').addEventListener('input', updateURLFromInputs);
+            document.getElementById('sawKerf').addEventListener('input', updateURLFromInputs);
+        };
+
+        function updateURLFromInputs() {
+            const sheets = getSheetsFromInputs();
+            const parts = getPartsFromInputs();
+            const kerf = parseFloat(document.getElementById('sawKerf').value) || 0;
+
+            const data = {
+                sheets,
+                parts,
+                kerf
+            };
+
+            const json = JSON.stringify(data);
+            const base64 = btoa(json);
+            const url = new URL(window.location);
+            url.searchParams.set('data', base64);
+            window.history.replaceState({}, '', url);
+        }
+
+        function loadInputsFromURL() {
+            const url = new URL(window.location);
+            const dataParam = url.searchParams.get('data');
+            if (dataParam) {
+                try {
+                    const json = atob(dataParam);
+                    const data = JSON.parse(json);
+
+                    if (data.kerf) {
+                        document.getElementById('sawKerf').value = data.kerf;
+                    }
+
+                    if (data.sheets && data.sheets.length > 0) {
+                        const sheetsContainer = document.getElementById('sheetsContainer');
+                        sheetsContainer.innerHTML = ''; // Clear initial row
+                        sheetRowCount = 0;
+                        data.sheets.forEach(sheet => addSheetRow(sheet));
+                    }
+
+                    if (data.parts && data.parts.length > 0) {
+                        const partsContainer = document.getElementById('partsContainer');
+                        partsContainer.innerHTML = ''; // Clear initial row
+                        partRowCount = 0;
+                        data.parts.forEach(part => addPartRow(part));
+                    }
+                } catch (e) {
+                    console.error("Error parsing URL data:", e);
+                    // Optionally, show an error to the user
+                }
+            }
+        }
+
+        function copyURLToClipboard() {
+            updateURLFromInputs();
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Shareable URL copied to clipboard!');
+            }, function(err) {
+                alert('Could not copy URL: ', err);
+            });
+        }
+
         // Function to add a new sheet input row
-        function addSheetRow() {
+        function addSheetRow(sheet) {
             sheetRowCount++;
             const sheetsContainer = document.getElementById('sheetsContainer');
             const newRow = document.createElement('div');
             newRow.className = 'flex flex-col sm:flex-row gap-4 items-end sheet-row';
+            const length = sheet ? sheet.length : '';
+            const width = sheet ? sheet.width : '';
+            const quantity = sheet ? sheet.quantity : '';
             newRow.innerHTML = `
                 <div class="flex-1">
                     <label for="sheetLength${sheetRowCount}" class="block text-sm font-medium text-gray-700">Length</label>
-                    <input type="number" id="sheetLength${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="sheetLength${sheetRowCount}" value="${length}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="flex-1">
                     <label for="sheetWidth${sheetRowCount}" class="block text-sm font-medium text-gray-700">Width</label>
-                    <input type="number" id="sheetWidth${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="sheetWidth${sheetRowCount}" value="${width}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="flex-1">
                     <label for="sheetQuantity${sheetRowCount}" class="block text-sm font-medium text-gray-700">Quantity</label>
-                    <input type="number" id="sheetQuantity${sheetRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="sheetQuantity${sheetRowCount}" value="${quantity}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <button onclick="removeSheetRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove sheet">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -205,6 +279,9 @@
                 </button>
             `;
             sheetsContainer.appendChild(newRow);
+            if (!sheet) {
+                updateURLFromInputs();
+            }
         }
 
         // Function to remove a sheet input row
@@ -216,26 +293,30 @@
                 const inputs = row.querySelectorAll('input');
                 inputs.forEach(input => input.value = '');
             }
+            updateURLFromInputs();
         }
 
         // Function to add a new part input row
-        function addPartRow() {
+        function addPartRow(part) {
             partRowCount++;
             const partsContainer = document.getElementById('partsContainer');
             const newRow = document.createElement('div');
             newRow.className = 'flex flex-col sm:flex-row gap-4 items-end part-row';
+            const length = part ? part.length : '';
+            const width = part ? part.width : '';
+            const quantity = part ? part.quantity : '';
             newRow.innerHTML = `
                 <div class="flex-1">
                     <label for="partLength${partRowCount}" class="block text-sm font-medium text-gray-700">Length</label>
-                    <input type="number" id="partLength${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="partLength${partRowCount}" value="${length}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="flex-1">
                     <label for="partWidth${partRowCount}" class="block text-sm font-medium text-gray-700">Width</label>
-                    <input type="number" id="partWidth${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="partWidth${partRowCount}" value="${width}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="flex-1">
                     <label for="partQuantity${partRowCount}" class="block text-sm font-medium text-gray-700">Quantity</label>
-                    <input type="number" id="partQuantity${partRowCount}" value="" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <input type="number" id="partQuantity${partRowCount}" value="${quantity}" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <button onclick="removePartRow(this)" class="p-2 text-gray-500 hover:text-red-500 transition-colors duration-200" title="Remove part">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -244,6 +325,9 @@
                 </button>
             `;
             partsContainer.appendChild(newRow);
+            if (!part) {
+                updateURLFromInputs();
+            }
         }
 
         // Function to remove a part input row
@@ -255,6 +339,7 @@
                 const inputs = row.querySelectorAll('input');
                 inputs.forEach(input => input.value = '');
             }
+            updateURLFromInputs();
         }
 
         // The core logic to generate the cutlist
